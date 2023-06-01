@@ -4,6 +4,7 @@ import argparse
 import glob
 import os
 import time
+import json
 
 import numpy as np
 import torch
@@ -112,6 +113,9 @@ if __name__ == "__main__":
         
     if not os.path.exists(args.model_dir):
         os.makedirs(args.model_dir)
+    
+    with open(f'{args.model_dir}/training_args.txt', 'w') as f:
+        json.dump(args.__dict__, f, indent=2)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
