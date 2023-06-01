@@ -29,11 +29,11 @@ def train_model(args, device):
             # Load the latest model checkpoint, in the form of llama_{i}.pth with largest i
             checkpoint_path = max(glob.glob(f"{args.model_dir}/llama_*.pth"), key=lambda x: int(x.split("/")[-1].split("_")[1].split(".")[0]))
             model.load_state_dict(torch.load(checkpoint_path))
-            batch_counter = checkpoint_path.split("/")[-1].split("_")[1].split(".")[0]
+            batch_counter = int(checkpoint_path.split("/")[-1].split("_")[1].split(".")[0])
         else:
             checkpoint_path = f"{args.model_dir}/llama_{args.load_epoch}.pth"
             model.load_state_dict(torch.load(checkpoint_path))
-            batch_counter = args.load_epoch
+            batch_counter = int(args.load_epoch)
         logger.info(f"Loaded model state dict from {checkpoint_path}")
     llama = LLaMA(model, tokenizer)
     llama.to_device(device)
