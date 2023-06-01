@@ -27,13 +27,14 @@ def train_model(args, device):
     if args.model_dir and args.load_epoch != -1:
         if not args.load_epoch:
             # Load the latest model checkpoint, in the form of llama_{i}.pth with largest i
-            best_path = max(glob.glob(f"{args.model_dir}/llama_*.pth"), key=lambda x: int(x.split("/")[-1].split("_")[1].split(".")[0]))
-            model.load_state_dict(torch.load(best_path))
-            batch_counter = best_path.split("/")[-1].split("_")[1].split(".")[0]
+            checkpoint_path = max(glob.glob(f"{args.model_dir}/llama_*.pth"), key=lambda x: int(x.split("/")[-1].split("_")[1].split(".")[0]))
+            model.load_state_dict(torch.load(checkpoint_path))
+            batch_counter = checkpoint_path.split("/")[-1].split("_")[1].split(".")[0]
         else:
-            model.load_state_dict(torch.load(args.model_dir / f"llama_{args.load_epoch}.pth"))
+            checkpoint_path = f"{args.model_dir}/llama_{args.load_epoch}.pth"
+            model.load_state_dict(torch.load(checkpoint_path))
             batch_counter = args.load_epoch
-        logger.info(f"Loaded model state dict from {args.model_dir}")
+        logger.info(f"Loaded model state dict from {checkpoint_path}")
     llama = LLaMA(model, tokenizer)
     llama.to_device(device)
     logger.info(f"Loaded model")
@@ -46,11 +47,12 @@ def train_model(args, device):
     optimizer = torch.optim.AdamW(llama.model.parameters(), lr=args.lr)
     if args.load_optimizer and args.load_epoch != -1:
         if not args.load_epoch:
-            best_path = max(args.model_dir.glob("optimizer_*.pth"), key=lambda x: int(x.stem.split("_")[1]))
-            optimizer.load_state_dict(torch.load(best_path))
+            optimizer_path = max(args.model_dir.glob("optimizer_*.pth"), key=lambda x: int(x.stem.split("_")[1]))
+            optimizer.load_state_dict(torch.load(optimizer_path))
         else:
-            optimizer.load_state_dict(torch.load(f"{args.model_dir}/optimizer_{args.load_epoch}.pth"))
-        logger.info(f"Loaded optimizer state from {args.model_dir}")
+            optimizer_path = f"{args.model_dir}/optimizer_{args.load_epoch}.pth"
+            optimizer.load_state_dict(torch.load(optimizer_path))
+        logger.info(f"Loaded optimizer state from {optimizer_path}")
     logger.info(f"Loaded optimizer")
         
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
