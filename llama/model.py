@@ -15,7 +15,9 @@ from fairscale.nn.model_parallel.layers import (
     RowParallelLinear,
     ColumnParallelLinear,
 )
+from fairscale.nn.data_parallel import FullyShardedDataParallel as FSDP
 
+# def build_model(model_args, dtype, )
 
 @dataclass
 class ModelArgs:
@@ -236,3 +238,4 @@ class Transformer(nn.Module):
         h = self.norm(h)
         output = self.output(h[:, -1, :])  # only compute last logits
         return output.float()
+    

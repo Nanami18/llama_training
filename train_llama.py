@@ -33,6 +33,7 @@ def train_model(args):
     dataset = PileDataset(args.dataset_path, tokenizer, args.max_seq_len, args.dataset_size)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
     logger.info("Loaded dataset")
+    logger.info("Num batches: %d, batch size: %d", len(dataloader), args.batch_size)
 
     optimizer = torch.optim.AdamW(llama.model.parameters(), lr=args.lr)
     if args.load_optimizer and args.load_epoch != -1:
