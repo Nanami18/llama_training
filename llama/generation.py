@@ -4,6 +4,7 @@
 from typing import List
 
 import torch
+import torch.nn.functional as F
 
 from llama.tokenizer import Tokenizer
 from llama.model import Transformer
@@ -65,9 +66,12 @@ class LLaMA:
             decoded.append(self.tokenizer.decode(t))
         return decoded
 
-    def forward(self, input, pad_id=None):
+    def forward(self, input, pad_id=-1):
+        output = self.model.forward_train(input, start_pos=0)
         target = input[:, 1:]
-        logits = self.model.forward(input[:, :-1])
+        loss = F.cross_entropy(output[:, :-1, :].transpose(1, 2), target, ignore_index=pad_id)
+
+        return loss
 
     def sample_top_p(probs, p):
         probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
