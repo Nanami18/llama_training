@@ -2,6 +2,7 @@ import logging
 import random
 import argparse
 import glob
+import time
 
 import numpy as np
 import torch
@@ -48,6 +49,7 @@ def train_model(args):
 
     batch_counter = 0
     cumulative_loss = 0
+    start_time = time.time()
     for i in range(args.epochs):
         for batch in dataloader:
             optimizer.zero_grad()
@@ -63,6 +65,7 @@ def train_model(args):
                 logger.info(f"Saved model at {batch_counter} batches")
             if (batch_counter) % args.log_freq == 0:
                 logger.info(f"Epoch {i}, batch {batch_counter}: loss {cumulative_loss/args.log_freq}")
+                logger.info(f"Time elapsed: {time.time() - start_time}")
                 cumulative_loss = 0
             
     torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{batch_counter*args.batch_size}.pth")
