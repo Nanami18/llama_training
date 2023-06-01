@@ -58,15 +58,15 @@ def train_model(args):
             batch_counter += 1
             cumulative_loss += loss.item()
             if (batch_counter) % args.save_freq == 0:
-                torch.save(llama.model.state_dict(), f"f{args.model_dir}/llama_{batch_counter*args.batch_size}.pth")
-                torch.save(optimizer.state_dict(), f"f{args.model_dir}/optimizer_{batch_counter*args.batch_size}.pth")
+                torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{batch_counter*args.batch_size}.pth")
+                torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{batch_counter*args.batch_size}.pth")
                 logger.info(f"Saved model at {batch_counter} batches")
             if (batch_counter) % args.log_freq == 0:
                 logger.info(f"Epoch {i}, batch {batch_counter}: loss {cumulative_loss/args.log_freq}")
                 cumulative_loss = 0
             
-    torch.save(llama.model.state_dict(), f"model_dir/llama_{batch_counter*args.batch_size}.pth")
-    torch.save(optimizer.state_dict(), f"model_dir/optimizer_{batch_counter*args.batch_size}.pth")
+    torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{batch_counter*args.batch_size}.pth")
+    torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{batch_counter*args.batch_size}.pth")
 
 
 if __name__ == "__main__":
