@@ -14,6 +14,9 @@ class LLaMA:
     def __init__(self, model: Transformer, tokenizer: Tokenizer):
         self.model = model
         self.tokenizer = tokenizer
+        
+    def to_device(self, device):
+        self.model = self.model.to(device)
 
     def generate(
         self,

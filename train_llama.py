@@ -2,6 +2,7 @@ import logging
 import random
 import argparse
 import glob
+import os
 import time
 
 import numpy as np
@@ -15,11 +16,12 @@ from data_utils import PileDataset
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-def train_model(args):
+def train_model(args, device):
     tokenizer = Tokenizer(args.tokenizer_path)
     model_args = ModelArgs(dim=args.hidden_dim, n_layers=args.n_layers, n_heads=args.n_heads, vocab_size=tokenizer.n_words,
                            norm_eps=args.vnorm_eps, max_batch_size=args.batch_size, max_seq_len=args.max_seq_len)
     model = Transformer(model_args)
+    
     if args.model_dir and args.load_epoch != -1:
         if not args.load_epoch:
             # Load the latest model checkpoint, in the form of llama_{i}.pth with largest i
@@ -29,6 +31,7 @@ def train_model(args):
             model.load_state_dict(torch.load(args.model_dir / f"llama_{args.load_epoch}.pth"))
         logger.info(f"Loaded model state dict from {args.model_dir}")
     llama = LLaMA(model, tokenizer)
+    llama.to_device(device)
     logger.info(f"Loaded model")
 
     dataset = PileDataset(args.dataset_path, tokenizer, args.max_seq_len, args.dataset_size)
@@ -69,6 +72,8 @@ def train_model(args):
                 logger.info(f"Epoch {i}, batch {batch_counter}: loss {cumulative_loss/args.log_freq}")
                 logger.info(f"Time elapsed: {time.time() - start_time}")
                 cumulative_loss = 0
+            torch.cuda.empty_cache()
+            
             
     torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{batch_counter*args.batch_size}.pth")
     torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{batch_counter*args.batch_size}.pth")
@@ -81,6 +86,7 @@ if __name__ == "__main__":
     parser.add_argument("--load_optimizer", default='store_false')
     parser.add_argument("--tokenizer_path", type=str, required=True)
     parser.add_argument("--hidden_dim", type=int, default=512)
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--n_layers", type=int, default=8)
     parser.add_argument("--n_heads", type=int, default=8)
     parser.add_argument("--vnorm_eps", type=float, default=1e-5)
@@ -96,5 +102,18 @@ if __name__ == "__main__":
     parser.add_argument("--log_freq", type=int, default=10, help="log per every n batches")
     
     args = parser.parse_args()
+    
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed(args.seed)
+    if torch.cuda.device_count() > 0:
+        torch.cuda.manual_seed_all(args.seed)
+        
+        
+    if not os.path.exists(args.model_dir):
+        os.makedirs(args.model_dir)
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device:", device)
 
-    train_model(args)
+    train_model(args, device)
