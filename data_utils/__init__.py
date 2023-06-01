@@ -1,1 +1,1 @@
-from pile import PileDataset
+from .pile import PileDataset
