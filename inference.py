@@ -14,6 +14,8 @@ from torch.utils.data import DataLoader, Dataset
 from llama import Tokenizer, Transformer, LLaMA, ModelArgs
 from data_utils import PileDataset
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 def inference(args, device):
     tokenizer = Tokenizer(args.tokenizer_path)
@@ -38,8 +40,10 @@ def inference(args, device):
     logger.info(f"Loaded model")
 
     prompts = args.prompt.split("###")
+    start_time = time.time()
     output = llama.generation(prompts, args.max_seq_len, args.temperature, args.top_p)
-
+    end_time = time.time() - start_time
+    logger.info(f"Generated {len(output)} prompts in {end_time} seconds")
     for i in range(len(output)):
         print(f"Prompt: {prompts[i]}")
         print(f"Generated: {output[i]}")
