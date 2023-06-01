@@ -41,7 +41,7 @@ def inference(args, device):
 
     prompts = args.prompt.split("###")
     start_time = time.time()
-    output = llama.generation(prompts, args.max_seq_len, args.temperature, args.top_p)
+    output = llama.generate(prompts, training_args['max_seq_len'], args.temperature, args.top_p)
     end_time = time.time() - start_time
     logger.info(f"Generated {len(output)} prompts in {end_time} seconds")
     for i in range(len(output)):

@@ -76,7 +76,7 @@ class LLaMA:
 
         return loss
 
-    def sample_top_p(probs, p):
+    def sample_top_p(self, probs, p):
         probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
         probs_sum = torch.cumsum(probs_sort, dim=-1)
         mask = probs_sum - probs_sort > p
