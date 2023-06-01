@@ -55,7 +55,7 @@ if __name__ == "__main__":
     
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--top_p", type=int, default=0.95)
-
+    parser.add_argument("--seed", type=int, default=42)
     
     args = parser.parse_args()
     
