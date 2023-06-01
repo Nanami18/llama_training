@@ -5,7 +5,7 @@ import torch
 
 class PileDataset(Dataset):
 
-    def __init__(self, file_path, tokenizer, context_length, dataset_size=None):
+    def __init__(self, file_path, tokenizer, context_length, dataset_size=None, dataset_start=None):
         self.file_path = file_path
         self.data = []
         self.tokenizer = tokenizer
@@ -13,6 +13,9 @@ class PileDataset(Dataset):
         with open(file_path, 'r') as f:
             line_counter = 0
             for line in f:
+                if line_counter < dataset_start:
+                    line_counter += 1
+                    continue
                 if line == "\n":
                     continue
                 text_line = json.loads(line)

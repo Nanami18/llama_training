@@ -22,20 +22,23 @@ def train_model(args, device):
     model_args = ModelArgs(dim=args.hidden_dim, n_layers=args.n_layers, n_heads=args.n_heads, vocab_size=tokenizer.n_words,
                            norm_eps=args.vnorm_eps, max_batch_size=args.batch_size, max_seq_len=args.max_seq_len)
     model = Transformer(model_args)
-    
+
+    batch_counter = 0
     if args.model_dir and args.load_epoch != -1:
         if not args.load_epoch:
             # Load the latest model checkpoint, in the form of llama_{i}.pth with largest i
             best_path = max(glob.glob(f"{args.model_dir}/llama_*.pth"), key=lambda x: int(x.split("/")[-1].split("_")[1].split(".")[0]))
             model.load_state_dict(torch.load(best_path))
+            batch_counter = best_path.split("/")[-1].split("_")[1].split(".")[0]
         else:
             model.load_state_dict(torch.load(args.model_dir / f"llama_{args.load_epoch}.pth"))
+            batch_counter = args.load_epoch
         logger.info(f"Loaded model state dict from {args.model_dir}")
     llama = LLaMA(model, tokenizer)
     llama.to_device(device)
     logger.info(f"Loaded model")
 
-    dataset = PileDataset(args.dataset_path, tokenizer, args.max_seq_len, args.dataset_size)
+    dataset = PileDataset(args.dataset_path, tokenizer, args.max_seq_len, args.dataset_size, args.dataset_start)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
     logger.info("Loaded dataset")
     logger.info("Num batches: %d, batch size: %d", len(dataloader), args.batch_size)
@@ -52,7 +55,6 @@ def train_model(args, device):
         
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     llama.model.to(device)
-    batch_counter = 0
     cumulative_loss = 0
     start_time = time.time()
     for i in range(args.epochs):
@@ -96,6 +98,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--dataset_path", type=str, required=True)
     parser.add_argument("--dataset_size", type=int, default=None, help="Number of samples to use from the dataset")
+    parser.add_argument("--dataset_start", type=int, default=0, help="Index of the first sample to use from the dataset")
 
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--epochs", type=int, default=10)
