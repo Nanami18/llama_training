@@ -47,7 +47,7 @@ def train_model(args, device):
     optimizer = torch.optim.AdamW(llama.model.parameters(), lr=args.lr)
     if args.load_optimizer and args.load_epoch != -1:
         if not args.load_epoch:
-            optimizer_path = max(glob.glob(f"{args.model_dir}/optimizer_*.pth"), key=lambda x: int(x.stem.split("_")[1]))
+            optimizer_path = max(glob.glob(f"{args.model_dir}/optimizer_*.pth"), key=lambda x: int(x.split("/")[-1].split("_")[1].split(".")[0]))
             optimizer.load_state_dict(torch.load(optimizer_path))
         else:
             optimizer_path = f"{args.model_dir}/optimizer_{args.load_epoch}.pth"
