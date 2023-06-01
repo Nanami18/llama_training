@@ -26,7 +26,7 @@ def train_model(args, device):
     if args.model_dir and args.load_epoch != -1:
         if not args.load_epoch:
             # Load the latest model checkpoint, in the form of llama_{i}.pth with largest i
-            best_path = max(glob.glob(f"{args.model_dir}/llama_*.pth"), key=lambda x: int(x.split("_")[1]))
+            best_path = max(glob.glob(f"{args.model_dir}/llama_*.pth").split, key=lambda x: int(x.split("/")[-1].split("_")[1].split(".")[0]))
             model.load_state_dict(torch.load(best_path))
         else:
             model.load_state_dict(torch.load(args.model_dir / f"llama_{args.load_epoch}.pth"))
