@@ -41,7 +41,7 @@ def inference(args, device):
 
     prompts = args.prompt.split("###")
     start_time = time.time()
-    output = llama.generate(prompts, training_args['max_seq_len'], args.temperature, args.top_p)
+    output = llama.generate(prompts, args.max_gen_len, args.temperature, args.top_p)
     end_time = time.time() - start_time
     logger.info(f"Generated {len(output)} prompts in {end_time} seconds")
     for i in range(len(output)):
@@ -60,6 +60,7 @@ if __name__ == "__main__":
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--top_p", type=int, default=0.95)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--max_gen_len", type=int, default=100)
     
     args = parser.parse_args()
     
