@@ -46,12 +46,14 @@ def train_model(args):
         logger.info(f"Loaded optimizer state from {args.model_dir}")
     logger.info(f"Loaded optimizer")
         
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    llama.model.to(device)
     batch_counter = 0
     cumulative_loss = 0
     start_time = time.time()
     for i in range(args.epochs):
         for batch in dataloader:
+            batch = batch.to(device)
             optimizer.zero_grad()
             loss = llama.forward(batch)
             loss.backward() # Will report backpropogate twice error if not set to True
