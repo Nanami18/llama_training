@@ -23,17 +23,17 @@ def train_model(args, device):
                            norm_eps=args.vnorm_eps, max_batch_size=args.batch_size, max_seq_len=args.max_seq_len)
     model = Transformer(model_args)
 
-    batch_counter = 0
+    trained_sequences = 0
     if args.model_dir and args.load_epoch != -1:
         if not args.load_epoch:
             # Load the latest model checkpoint, in the form of llama_{i}.pth with largest i
             checkpoint_path = max(glob.glob(f"{args.model_dir}/llama_*.pth"), key=lambda x: int(x.split("/")[-1].split("_")[1].split(".")[0]))
             model.load_state_dict(torch.load(checkpoint_path))
-            batch_counter = int(checkpoint_path.split("/")[-1].split("_")[1].split(".")[0])
+            trained_sequences = int(checkpoint_path.split("/")[-1].split("_")[1].split(".")[0])
         else:
             checkpoint_path = f"{args.model_dir}/llama_{args.load_epoch}.pth"
             model.load_state_dict(torch.load(checkpoint_path))
-            batch_counter = int(args.load_epoch)
+            trained_sequences = int(args.load_epoch)
         logger.info(f"Loaded model state dict from {checkpoint_path}")
     llama = LLaMA(model, tokenizer)
     llama.to_device(device)
@@ -58,6 +58,7 @@ def train_model(args, device):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     llama.model.to(device)
     cumulative_loss = 0
+    batch_counter = 0
     start_time = time.time()
     for i in range(args.epochs):
         for batch in dataloader:
@@ -70,8 +71,8 @@ def train_model(args, device):
             batch_counter += 1
             cumulative_loss += loss.item()
             if (batch_counter) % args.save_freq == 0:
-                torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{batch_counter*args.batch_size}.pth")
-                torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{batch_counter*args.batch_size}.pth")
+                torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{trained_sequences + batch_counter*args.batch_size}.pth")
+                torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{trained_sequences + batch_counter*args.batch_size}.pth")
                 logger.info(f"Saved model at {batch_counter} batches")
             if (batch_counter) % args.log_freq == 0:
                 logger.info(f"Epoch {i}, batch {batch_counter}: loss {cumulative_loss/args.log_freq}")
@@ -80,8 +81,8 @@ def train_model(args, device):
             torch.cuda.empty_cache()
             
             
-    torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{batch_counter*args.batch_size}.pth")
-    torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{batch_counter*args.batch_size}.pth")
+    torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{trained_sequences + batch_counter*args.batch_size}.pth")
+    torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{trained_sequences + batch_counter*args.batch_size}.pth")
 
 
 if __name__ == "__main__":
