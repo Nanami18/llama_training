@@ -40,9 +40,11 @@ def train_model(args, device):
     llama.to_device(device)
     logger.info(f"Loaded model")
 
+    time = time.time()
     dataset = PileDataset(args.dataset_path, tokenizer, args.max_seq_len, args.dataset_size, args.dataset_start)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
-    logger.info("Loaded dataset")
+    finish_time = time.time()
+    logger.info("Loaded dataset in %.2f seconds", finish_time - time)
     logger.info("Num batches: %d, batch size: %d", len(dataloader), args.batch_size)
     if args.validation_period is not None:
         assert args.valset_path is not None, "Validation set is not provided"
