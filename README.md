@@ -14,3 +14,7 @@ python3 train_llama.py --model_dir checkpoints/pile_llama --load_epoch -1 --toke
 Can replace *model_dir*, *tokenizer_path*, and *dataset_path* based on your directory structure. The model will be loaded and stored under *model_dir*. If train from scratch, specify *load_epoch=1*. 
 
 Current only support taking one jsonl file as the data, and has no streaming functionality at the time, therefore the initial loading of the data can take very long. *data_size* specifies how many lines to use from the training file.
+
+5. Evaluate the model on the validation set
+```python3
+python evaluate.py --model_dir checkpoints/pile_llama_gpu --tokenizer_path checkpoints/pile_llama/tokenizer.model --valset_path data/val.jsonl --valset_size 10000
