@@ -10,6 +10,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
+from torch.utils.tensorboard import SummaryWriter
 
 from llama import Tokenizer, Transformer, LLaMA, ModelArgs
 from data_utils import PileDataset
@@ -65,6 +66,10 @@ def train_model(args, device):
     llama.model.to(device)
     cumulative_loss = 0
     batch_counter = 0
+    log_dir = f"{args.model_dir}/logs"
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    writer = SummaryWriter(f"{args.model_dir}/logs")
     start_time = time.time()
     for i in range(args.epochs):
         for batch in dataloader:
@@ -72,6 +77,7 @@ def train_model(args, device):
             optimizer.zero_grad()
             loss = llama.forward(batch)
             loss.backward()
+            writer.add_scalar('Loss/train', loss, trained_sequences)
             nn.utils.clip_grad_norm(llama.model.parameters(), args.clip_grad_norm)
             optimizer.step()
             
@@ -85,6 +91,7 @@ def train_model(args, device):
             if args.validation_period is not None and (batch_counter) % args.validation_period == 0:
                 val_loss = compute_val_loss(llama, val_dataloader)
                 logger.info(f"Epoch {i} trained sequences {trained_sequences} loss: {val_loss}")
+                writer.add_scalar('Loss/val', val_loss, trained_sequences)
             if (batch_counter) % args.log_freq == 0:
                 logger.info(f"Epoch {i}, trained sequence {trained_sequences}: loss {cumulative_loss/args.log_freq}")
                 logger.info(f"Time elapsed: {time.time() - start_time}")
