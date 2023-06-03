@@ -17,7 +17,7 @@ from data_utils import PileDataset
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-def inference(args, device):
+def inference_on_prompts(args, device):
     tokenizer = Tokenizer(args.tokenizer_path)
     with open(f"{args.model_dir}/training_args.txt") as f:
         training_args = json.load(f)
@@ -70,12 +70,8 @@ if __name__ == "__main__":
     torch.cuda.manual_seed(args.seed)
     if torch.cuda.device_count() > 0:
         torch.cuda.manual_seed_all(args.seed)
-        
-        
-    if not os.path.exists(args.model_dir):
-        os.makedirs(args.model_dir)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
 
-    inference(args, device)
+    inference_on_prompts(args, device)
