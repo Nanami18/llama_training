@@ -5,7 +5,7 @@ import torch
 
 class PileDataset(Dataset):
 
-    def __init__(self, file_path, tokenizer, context_length, dataset_size=None, dataset_start=None):
+    def __init__(self, file_path, tokenizer, context_length, dataset_size=None, dataset_start=0):
         self.file_path = file_path
         self.data = []
         self.tokenizer = tokenizer
