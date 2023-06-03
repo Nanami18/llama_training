@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from llama import Tokenizer, Transformer, LLaMA, ModelArgs
 from data_utils import PileDataset
+from evaluate import compute_val_loss
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -43,8 +44,12 @@ def train_model(args, device):
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
     logger.info("Loaded dataset")
     logger.info("Num batches: %d, batch size: %d", len(dataloader), args.batch_size)
+    if args.validation_period is not None:
+        assert args.valset_path is not None, "Validation set is not provided"
+        val_dataset = PileDataset(args.valset_path, tokenizer, args.max_seq_len, args.valset_size)
+        val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True)
 
-    optimizer = torch.optim.AdamW(llama.model.parameters(), lr=args.lr)
+    optimizer = torch.optim.AdamW(llama.model.parameters(), lr=args.lr, betas=(args.adam_beta1, args.adam_beta2), eps=args.adam_eps, weight_decay=args.weight_decay)
     if args.load_optimizer and args.load_epoch != -1:
         if not args.load_epoch:
             optimizer_path = max(glob.glob(f"{args.model_dir}/optimizer_*.pth"), key=lambda x: int(x.split("/")[-1].split("_")[1].split(".")[0]))
@@ -55,7 +60,6 @@ def train_model(args, device):
         logger.info(f"Loaded optimizer state from {optimizer_path}")
     logger.info(f"Loaded optimizer")
         
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     llama.model.to(device)
     cumulative_loss = 0
     batch_counter = 0
@@ -65,24 +69,29 @@ def train_model(args, device):
             batch = batch.to(device)
             optimizer.zero_grad()
             loss = llama.forward(batch)
-            loss.backward() # Will report backpropogate twice error if not set to True
+            loss.backward()
+            nn.utils.clip_grad_norm(llama.model.parameters(), args.clip_grad_norm)
             optimizer.step()
             
             batch_counter += 1
             cumulative_loss += loss.item()
+            trained_sequences += args.batch_size
             if (batch_counter) % args.save_freq == 0:
-                torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{trained_sequences + batch_counter*args.batch_size}.pth")
-                torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{trained_sequences + batch_counter*args.batch_size}.pth")
-                logger.info(f"Saved model at {batch_counter} batches")
+                torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{trained_sequences}.pth")
+                torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{trained_sequences}.pth")
+                logger.info(f"Saved model at {trained_sequences} trained sequences")
+            if (batch_counter) % args.validation_period == 0:
+                val_loss = compute_val_loss(llama, val_dataloader)
+                logger.info(f"Epoch {i} trained sequences {trained_sequences} loss: {val_loss}")
             if (batch_counter) % args.log_freq == 0:
-                logger.info(f"Epoch {i}, batch {batch_counter}: loss {cumulative_loss/args.log_freq}")
+                logger.info(f"Epoch {i}, trained sequence {trained_sequences}: loss {cumulative_loss/args.log_freq}")
                 logger.info(f"Time elapsed: {time.time() - start_time}")
                 cumulative_loss = 0
             torch.cuda.empty_cache()
             
             
-    torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{trained_sequences + batch_counter*args.batch_size}.pth")
-    torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{trained_sequences + batch_counter*args.batch_size}.pth")
+    torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{trained_sequences}.pth")
+    torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{trained_sequences}.pth")
 
 
 if __name__ == "__main__":
@@ -98,10 +107,18 @@ if __name__ == "__main__":
     parser.add_argument("--vnorm_eps", type=float, default=1e-5)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--max_seq_len", type=int, default=2048, help="Maximum context length")
+    parser.add_argument("--adam_beta1", type=float, default=0.9)
+    parser.add_argument("--adam_beta2", type=float, default=0.999)
+    parser.add_argument("--adam_eps", type=float, default=1e-8)
+    parser.add_argument("--weight_decay", type=float, default=0.01)
+    parser.add_argument("--clip_grad_norm", type=float, default=1.0)
 
     parser.add_argument("--dataset_path", type=str, required=True)
     parser.add_argument("--dataset_size", type=int, default=None, help="Number of samples to use from the dataset")
     parser.add_argument("--dataset_start", type=int, default=0, help="Index of the first sample to use from the dataset")
+    parser.add_argument("--validation_period", type=int, default=None, help="Number of batches between validation checks")
+    parser.add_argument("--valset_path", type=str)
+    parser.add_argument("--valset_size", type=int, default=10000)
 
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--epochs", type=int, default=10)
