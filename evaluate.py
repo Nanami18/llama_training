@@ -40,7 +40,7 @@ def evaluate_on_val(args, device):
     llama.to_device(device)
     logger.info(f"Loaded model")
 
-    val_dataset = PileDataset(args.valset_path, tokenizer, args.max_seq_len, args.valset_size)
+    val_dataset = PileDataset(args.valset_path, tokenizer, training_args["max_seq_len"], args.valset_size)
     val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True)
     logger.info(f"Loaded validation dataset")
 
