@@ -14,7 +14,8 @@ class PileDataset(Dataset):
             line_counter = 0
             for line in f:
                 if line_counter < dataset_start:
-                    line_counter += 1
+                    if line != "\n":
+                        line_counter += 1
                     continue
                 if line == "\n":
                     continue
