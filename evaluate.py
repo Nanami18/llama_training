@@ -52,7 +52,7 @@ def compute_val_loss(val_dataloader, llama_model):
     with torch.no_grad():
         total_loss = 0
         for batch in val_dataloader:
-            batch = batch.to(llama_model.device)
+            batch = batch.to(device)
             loss = llama_model.forward(batch)
             total_loss += loss.item()
     return total_loss / len(val_dataloader)
