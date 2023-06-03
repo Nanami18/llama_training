@@ -67,6 +67,7 @@ if __name__ == "__main__":
     
     parser.add_argument("--valset_path", type=str, required=True)
     parser.add_argument("--valset_size", type=int, default=10000)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=42)
     
     args = parser.parse_args()
