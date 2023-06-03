@@ -80,7 +80,7 @@ def train_model(args, device):
                 torch.save(llama.model.state_dict(), f"{args.model_dir}/llama_{trained_sequences}.pth")
                 torch.save(optimizer.state_dict(), f"{args.model_dir}/optimizer_{trained_sequences}.pth")
                 logger.info(f"Saved model at {trained_sequences} trained sequences")
-            if (batch_counter) % args.validation_period == 0:
+            if args.validation_period is not None and (batch_counter) % args.validation_period == 0:
                 val_loss = compute_val_loss(llama, val_dataloader)
                 logger.info(f"Epoch {i} trained sequences {trained_sequences} loss: {val_loss}")
             if (batch_counter) % args.log_freq == 0:
