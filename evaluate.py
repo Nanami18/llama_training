@@ -44,10 +44,10 @@ def evaluate_on_val(args, device):
     val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True)
     logger.info(f"Loaded validation dataset")
 
-    avg_loss = compute_val_loss(val_dataloader, llama)
+    avg_loss = compute_val_loss(val_dataloader, llama, device)
     print("Average validation loss: ", avg_loss)
 
-def compute_val_loss(val_dataloader, llama_model):
+def compute_val_loss(val_dataloader, llama_model, device):
     llama_model.model.eval()
     with torch.no_grad():
         total_loss = 0
