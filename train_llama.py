@@ -90,7 +90,7 @@ def train_model(args, device):
                 logger.info(f"Saved model at {trained_sequences} trained sequences")
             if args.validation_period is not None and (batch_counter) % args.validation_period == 0:
                 val_loss = compute_val_loss(val_dataloader, llama, device)
-                logger.info(f"Epoch {i} trained sequences {trained_sequences} loss: {val_loss}")
+                logger.info(f"Epoch {i} trained sequences {trained_sequences} eval loss: {val_loss}")
                 writer.add_scalar('Loss/val', val_loss, trained_sequences)
             if (batch_counter) % args.log_freq == 0:
                 logger.info(f"Epoch {i}, trained sequence {trained_sequences}: loss {cumulative_loss/args.log_freq}")
