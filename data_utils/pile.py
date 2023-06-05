@@ -5,15 +5,16 @@ import torch
 
 class PileDataset(Dataset):
 
-    def __init__(self, file_path, tokenizer, context_length, dataset_size=None, dataset_start=0, substitute_unicode=False):
+    def __init__(self, file_path, tokenizer, context_length, dataset_size=None, dataset_start=0, substitute_unicode=False, cleaned_up=False):
         self.file_path = file_path
         self.data = []
         self.removed  = set()
         
-        with open('data_utils/removed.jsonl', 'r') as f:
-            for line in f:
-                self.removed.add(json.loads(line)['text'])
-        
+        if cleaned_up:
+            with open('data_utils/removed.jsonl', 'r') as f:
+                for line in f:
+                    self.removed.add(json.loads(line)['text'])
+
         self.tokenizer = tokenizer
         self.context_length = context_length
         with open(file_path, 'r') as f:
@@ -23,9 +24,9 @@ class PileDataset(Dataset):
                     continue
                 
                 text_line = json.loads(line)
-                
-                if text_line['text'] in self.removed:
-                    continue
+                if cleaned_up:
+                    if text_line['text'] in self.removed:
+                        continue
                 if line_counter < dataset_start:
                     if line != "\n":
                         line_counter += 1

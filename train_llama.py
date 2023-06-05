@@ -55,7 +55,12 @@ def train_model(args, device):
     logger.info(f"Loaded model")
 
     cur_time = time.time()
-    dataset = PileDataset(args.dataset_path, tokenizer, args.max_seq_len, args.dataset_size, args.dataset_start)
+    dataset = PileDataset(args.dataset_path, 
+                          tokenizer, 
+                          args.max_seq_len, 
+                          args.dataset_size, 
+                          args.dataset_start, 
+                          cleaned_up=args.cleaned_up)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
     finish_time = time.time()
     logger.info("Loaded dataset in %.2f seconds", finish_time - cur_time)
@@ -144,6 +149,7 @@ if __name__ == "__main__":
     parser.add_argument("--validation_period", type=int, default=None, help="Number of batches between validation checks")
     parser.add_argument("--valset_path", type=str)
     parser.add_argument("--valset_size", type=int, default=10000)
+    parser.add_argument("--clean-up", action="store_true", help="Remove non-english data")
 
     parser.add_argument("--dtype", type=str, default="fp32", choices=["fp32", "fp16"])
     parser.add_argument("--fp_32_reduce_scatter", type=str, default='all')
