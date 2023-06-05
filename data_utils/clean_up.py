@@ -2,22 +2,31 @@ import json
 import argparse
 
 from collections import defaultdict
-import spacy
-from spacy.language import Language
-from spacy_langdetect import LanguageDetector
+# import spacy
+from multiprocessing import Pool
+from tqdm import tqdm
+from tqdm.contrib.concurrent import process_map
+import multiprocessing
+# from spacy.language import Language
+import os
+# from spacy_langdetect import LanguageDetector
+from fasttext import load_model
 
+model = load_model("lid.176.ftz")
 
-def get_lang_detector(nlp, name):
-    return LanguageDetector()
+# def get_lang_detector(nlp, name):
+#     return LanguageDetector()
 
 def read_file(file_path):
     results = []
-    idx = 0
     type2idx = defaultdict(list)
+    idx = 0
     with open(file_path, 'r') as f:
         for line in f:
             if line == "\n":
                 continue
+            # if idx > 10000:
+            #     break
             curr_item = json.loads(line)
             curr_type = curr_item['meta']['pile_set_name']
             results.append(curr_item)
@@ -36,21 +45,30 @@ def clean_up_github(data):
             
 
 def remove_non_english(data):
-    nlp = spacy.load("en_core_web_sm")
-    Language.factory("language_detector", func=get_lang_detector)
-    nlp.add_pipe("language_detector", last=True)
-    cleaned = []
-    for single_item in data:
-        if single_item['meta']['pile_set_name'] == 'Github':
-            continue
-        doc = nlp(single_item['text'][:500])
-        if doc._.language['language'] != 'en':
-            print(doc._.language['language'])
-            print(single_item['text'])
-            print('-------------------')
-        else:
-            cleaned.append(single_item)
-    return cleaned
+    # nlp = spacy.load("en_core_web_sm")
+    # Language.factory("language_detector", func=get_lang_detector)
+    # nlp.add_pipe("language_detector", last=True)
+    id = multiprocessing.current_process().pid
+    with open(f'cleaned_{id}.jsonl', 'a+') as f:
+        if type(data) == dict:
+            data = [data]
+        elif type(data) == list:
+            data = data
+        for single_item in data:
+            # if single_item['meta']['pile_set_name'] == 'Github':
+            #     continue
+            # doc = nlp(single_item['text'][:200])
+            text = single_item['text'][:200].replace('\n', '')
+            label, _ = model.predict(text)
+            lang = label[0].replace('__label__', '')
+            if lang != 'en':
+                print(lang)
+                continue
+            # if doc._.language['language'] != 'en':
+            #     print(doc._.language['language'])
+            else:
+                f.write(json.dumps(single_item))
+                f.write('\n')
     
             
 def substitute_unicode(data):
@@ -75,16 +93,24 @@ def main():
     if args.clean_up_github:
         data = clean_up_github(data)
         
-    data = remove_non_english(data)
     if args.output_file is None:
         output_file = f'{args.data_dir}/{args.data_file[:-6]}_cleaned.jsonl'
     else:
         output_file = args.output_file
         
-    with open(output_file, 'w+') as f:
-        for single_item in data:
-            f.write(json.dumps(single_item))
-            f.write('\n')
+    print("n_cores: ", multiprocessing.cpu_count())
+    n_cores = multiprocessing.cpu_count()
+    
+    if os.path.exists(output_file):
+        with open(output_file, 'r') as f:
+            cleaned = []
+            for line in f:
+                cleaned.append(json.loads(line))
+    else:
+        cleaned = []
+        
+    # data = data[:200]
+    r = process_map(remove_non_english, data, max_workers=n_cores)
     
 
 if __name__ == "__main__":

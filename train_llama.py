@@ -13,6 +13,8 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 
 from llama import Tokenizer, Transformer, LLaMA, ModelArgs
+import fairscale.nn.model_parallel.initialize as fs_init
+from utils import build_model, init_distributed
 from data_utils import PileDataset
 from evaluate import compute_val_loss
 
@@ -23,9 +25,20 @@ def train_model(args, device):
     tokenizer = Tokenizer(args.tokenizer_path)
     model_args = ModelArgs(dim=args.hidden_dim, n_layers=args.n_layers, n_heads=args.n_heads, vocab_size=tokenizer.n_words,
                            norm_eps=args.vnorm_eps, max_batch_size=args.batch_size, max_seq_len=args.max_seq_len)
-    model = Transformer(model_args)
 
-    trained_sequences = 0
+    if torch.cuda.device_count() > 1:
+        args.slurm = init_distributed()
+        fs_init.initialize_model_parallel(args.model_parallel_size)
+        
+        logger.info(f"Using {torch.cuda.device_count()} GPUs")
+        model = build_model(model_args,
+                    dtype=args.dtype,
+                    fp32_reduce_scatter=args.fp_32_reduce_scatter,
+                    reshard_after_forward=args.reshard_after_forward)
+    else:
+        model = Transformer(model_args)
+    
+
     if args.model_dir and args.load_epoch != -1:
         if not args.load_epoch:
             # Load the latest model checkpoint, in the form of llama_{i}.pth with largest i
@@ -64,6 +77,8 @@ def train_model(args, device):
     logger.info(f"Loaded optimizer")
         
     llama.model.to(device)
+    
+    batch_counter = 0
     cumulative_loss = 0
     batch_counter = 0
     log_dir = f"{args.model_dir}/logs"
@@ -129,6 +144,12 @@ if __name__ == "__main__":
     parser.add_argument("--valset_path", type=str)
     parser.add_argument("--valset_size", type=int, default=10000)
 
+    parser.add_argument("--dtype", type=str, default="fp32", choices=["fp32", "fp16"])
+    parser.add_argument("--dataset_path", type=str, required=True)
+    parser.add_argument("--dataset_size", type=int, default=None, help="Number of samples to use from the dataset")
+    parser.add_argument("--fp_32_reduce_scatter", type=str, default='all')
+    parser.add_argument("--reshard_after_forward", action="store_true")
+    parser.add_argument("--model_parallel_size", type=int, default=1, help="Number of GPUs to use for model parallelism")
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--save_freq", type=int, default=100, help="save per every n batches")
