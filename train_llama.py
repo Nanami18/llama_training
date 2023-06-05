@@ -60,7 +60,7 @@ def train_model(args, device):
                           args.max_seq_len, 
                           args.dataset_size, 
                           args.dataset_start, 
-                          cleaned_up=args.cleaned_up)
+                          cleaned_up=args.clean_up)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
     finish_time = time.time()
     logger.info("Loaded dataset in %.2f seconds", finish_time - cur_time)
