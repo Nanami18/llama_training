@@ -38,7 +38,7 @@ def train_model(args, device):
     else:
         model = Transformer(model_args)
     
-
+    trained_sequences = 0
     if args.model_dir and args.load_epoch != -1:
         if not args.load_epoch:
             # Load the latest model checkpoint, in the form of llama_{i}.pth with largest i
@@ -59,6 +59,7 @@ def train_model(args, device):
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
     finish_time = time.time()
     logger.info("Loaded dataset in %.2f seconds", finish_time - cur_time)
+    
     logger.info("Num batches: %d, batch size: %d", len(dataloader), args.batch_size)
     if args.validation_period is not None:
         assert args.valset_path is not None, "Validation set is not provided"
@@ -145,8 +146,6 @@ if __name__ == "__main__":
     parser.add_argument("--valset_size", type=int, default=10000)
 
     parser.add_argument("--dtype", type=str, default="fp32", choices=["fp32", "fp16"])
-    parser.add_argument("--dataset_path", type=str, required=True)
-    parser.add_argument("--dataset_size", type=int, default=None, help="Number of samples to use from the dataset")
     parser.add_argument("--fp_32_reduce_scatter", type=str, default='all')
     parser.add_argument("--reshard_after_forward", action="store_true")
     parser.add_argument("--model_parallel_size", type=int, default=1, help="Number of GPUs to use for model parallelism")
