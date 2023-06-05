@@ -5,21 +5,43 @@ import torch
 
 class PileDataset(Dataset):
 
-    def __init__(self, file_path, tokenizer, context_length, dataset_size=None, dataset_start=0):
+    def __init__(self, file_path, tokenizer, context_length, dataset_size=None, dataset_start=0, substitute_unicode=False):
         self.file_path = file_path
         self.data = []
+        self.removed  = set()
+        
+        with open('data_utils/removed.jsonl', 'r') as f:
+            for line in f:
+                self.removed.add(json.loads(line)['text'])
+        
         self.tokenizer = tokenizer
         self.context_length = context_length
         with open(file_path, 'r') as f:
             line_counter = 0
             for line in f:
+                if line == "\n":
+                    continue
+                
+                text_line = json.loads(line)
+                
+                if text_line['text'] in self.removed:
+                    continue
                 if line_counter < dataset_start:
                     if line != "\n":
                         line_counter += 1
                     continue
-                if line == "\n":
-                    continue
-                text_line = json.loads(line)
+                
+                if substitute_unicode:
+                    unicode2ascii = {'\u2019': "'", 
+                     '\u2018': "'", 
+                     '\u201c': '"', 
+                     '\u201d': '"', 
+                     '\u2014': '-', 
+                     '\u2013': '-',
+                     '\u2026': '...'}
+                    for unicode, ascii in unicode2ascii.items():
+                        text_line['text'] = text_line['text'].replace(unicode, ascii)
+
                 # If we do this, wouldn't this cause the model to generate eos only rarely?
                 tokens = self.tokenizer.encode(text_line['text'], bos=True, eos=True)
                 # segment text by context length
