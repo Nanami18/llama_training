@@ -19,3 +19,6 @@ Current only support taking one jsonl file as the data, and has no streaming fun
 ```python3
 python evaluate.py --model_dir checkpoints/pile_llama_gpu --tokenizer_path checkpoints/pile_llama/tokenizer.model --valset_path data/val.jsonl --valset_size 10000
 ```
+If you wish, download the checkpoint we trained on first million lines of the Pile training set from [here](https://drive.google.com/drive/folders/1LaFJ9a4i14VZ0unNlI5jKFSUoT7CsGrd?usp=sharing). We use the tokenizer provided by the llama team. To get the access, fill this [form](https://docs.google.com/forms/d/e/1FAIpQLSfqNECQnMkycAp2jP4Z9TFX0cGR4uf7b_fBxjY_OjhJILlKGA/viewform).
+
+Disclaimer: our model is significantly undertrained due to the computing resources we have.
