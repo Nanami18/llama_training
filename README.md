@@ -18,3 +18,4 @@ Current only support taking one jsonl file as the data, and has no streaming fun
 5. Evaluate the model on the validation set
 ```python3
 python evaluate.py --model_dir checkpoints/pile_llama_gpu --tokenizer_path checkpoints/pile_llama/tokenizer.model --valset_path data/val.jsonl --valset_size 10000
+```
